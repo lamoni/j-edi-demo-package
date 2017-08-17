@@ -1,0 +1,114 @@
+{
+  "builders": [
+    {
+      "type": "vmware-iso",
+      "iso_url": "http://old-releases.ubuntu.com/releases/16.04.2/ubuntu-16.04.2-server-amd64.iso",
+      "iso_checksum": "2bce60d18248df9980612619ff0b34e6",
+      "iso_checksum_type": "md5",
+      "ssh_username": "juniper",
+      "ssh_password": "Clouds123",
+      "ssh_wait_timeout": "20m",
+      "http_directory" : "preseeds",
+      "http_port_min" : 9001,
+      "http_port_max" : 9001,
+      "shutdown_command": "echo 'Clouds123' | sudo -S shutdown -P now",
+      "vm_name": "j-edi-vmware",
+      "output_directory": "j-edi-vmware",
+      "boot_command": [
+        "<enter><wait><f6><esc><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "/install/vmlinuz<wait>",
+        " auto<wait>",
+        " console-setup/ask_detect=false<wait>",
+        " console-setup/layoutcode=us<wait>",
+        " console-setup/modelcode=pc105<wait>",
+        " debconf/frontend=noninteractive<wait>",
+        " debian-installer=en_US<wait>",
+        " hostname=master ",
+        " fb=false<wait>",
+        " initrd=/install/initrd.gz<wait>",
+        " kbd-chooser/method=us<wait>",
+        " keyboard-configuration/layout=USA<wait>",
+        " keyboard-configuration/variant=USA<wait>",
+        " locale=en_US<wait>",
+        " netcfg/get_hostname=master<wait>",
+        " grub-installer/bootdev=/dev/sda<wait>",
+        " noapic<wait>",
+        " preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg",
+        " -- <wait>",
+        "<enter><wait>"
+      ],
+      "vmx_data": {
+        "memsize": "8192",
+        "numvcpus": "4",
+        "cpuid.coresPerSocket": "2",
+        "vhv.enable": "TRUE",
+        "ethernet0.virtualDev": "vmxnet3",
+        "ethernet0.connectionType": "nat"
+      }
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "execute_command": "echo 'Clouds123' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+      "inline": [
+        "sudo apt-get update -y",
+        "sudo apt-get upgrade -y",
+        "sudo apt-get install git openssh-server -y",
+        "sudo sed -i 's/ip6-loopback/ip6-loopback master/' /etc/hosts",
+        "sudo sed -i 's/prohibit-password/yes/' /etc/ssh/sshd_config",
+        "sudo service ssh restart",
+        "echo 'root:Clouds123' | sudo chpasswd",
+        "sudo apt-get install sshpass -y",
+        "mkdir ~/.ssh",
+        "chmod 700 ~/.ssh",
+        "sudo mkdir /root/.ssh",
+        "sudo sudo chown -R root:root /root/.ssh",
+        "sudo bash -c \"ssh-keyscan `/sbin/ifconfig | grep -A 1 ens | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'` >> /root/.ssh/known_hosts\"",
+        "sudo bash -c \"ssh-keyscan master >> /root/.ssh/known_hosts\"",
+        "sudo bash -c \"ssh-keyscan `/sbin/ifconfig | grep -A 1 ens | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'` >> ~/.ssh/known_hosts\"",
+        "sudo bash -c \"ssh-keyscan master >> ~/.ssh/known_hosts\"",
+        "sudo git clone https://jedidemo:3996134aed0410cb7416612475ddc6e337b2afb1@github.com/Juniper/jedi-seed.git /opt/jedi-seed",
+        "sudo git clone https://jedidemo:3996134aed0410cb7416612475ddc6e337b2afb1@github.com/Juniper/j-EDI.git /opt/j-EDI",
+
+        "sudo sed -i \"s/#minion14     ansible_host=192.168.122.59 ansible_connection=ssh ansible_user=nembery ansible_ssh_pass=Clouds123/minion14     ansible_host=`/sbin/ifconfig | grep -A 1 ens | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'` ansible_connection=ssh ansible_user=root ansible_ssh_pass=Clouds123/\" /opt/jedi-seed/ansible/seed.hosts",
+        "sudo sed -i \"s/minion14     ansible_host=192.168.122.59 ansible_connection=ssh/#minion14     ansible_host=192.168.122.59 ansible_connection=ssh/\" /opt/jedi-seed/ansible/seed.hosts",
+        "sudo sed -i 's/minion14/master/' /opt/jedi-seed/ansible/seed.hosts",
+
+        "sudo apt-get update && sudo apt-get -y upgrade",
+        "sudo apt-get install python-pip -y",
+        "sudo pip install --upgrade pip",
+        "sudo pip install ansible==2.2.3.0",
+        "sudo apt-get remove python-openssl",
+        "sudo pip install pyopenssl",
+        "sudo ansible-playbook -i /opt/jedi-seed/ansible/seed.hosts /opt/jedi-seed/ansible/provision-seed.yml",
+
+        "sudo sed -i 's/minion21/master/' /srv/pillar/seed.sls",
+        "sudo sed -i 's/minion22/master/' /srv/pillar/seed.sls",
+        "sudo sed -i 's/minion25/master/' /srv/pillar/seed.sls",
+
+        "sudo sed -i '/bounce_master:/Q' /srv/salt/orchestration/build_cluster.sls",
+
+        "sudo sed -i \"s/192.168.122.64/`/sbin/ifconfig | grep -A 1 ens | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'`/\" /srv/pillar/seed.sls",
+        "sudo sed -i \"s/192.168.122.65/`/sbin/ifconfig | grep -A 1 ens | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'`/\" /srv/pillar/seed.sls",
+        "sudo sed -i \"s/192.168.122.67/`/sbin/ifconfig | grep -A 1 ens | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'`/\" /srv/pillar/seed.sls",
+
+        "sudo sed -i \"s/    - 'host_id': minion26//\" /srv/pillar/seed.sls",
+        "sudo sed -i \"s/      'ip': 192.168.122.68//\" /srv/pillar/seed.sls",
+
+        "sudo sed -i \"s/    - 'host_id': minion27//\" /srv/pillar/seed.sls",
+        "sudo sed -i \"s/      'ip': 192.168.122.69//\" /srv/pillar/seed.sls",
+        "sudo salt-run jedi_cluster.setup_cluster",
+        "sleep 60s",
+        "sudo cp /opt/j-EDI/saltstack/srv/runners/proxy_minion.py /srv/runners/proxy_minion.py",
+        "sudo salt-run jedi_cluster.build_cluster",
+        "sleep 10s",
+        "{ echo \"*/2 * * * * sudo service salt-minion restart\"; } | sudo crontab -"
+
+      ]
+    }
+  ]
+}

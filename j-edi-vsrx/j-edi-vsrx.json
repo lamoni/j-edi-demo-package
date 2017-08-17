@@ -1,0 +1,51 @@
+{
+  "builders": [
+    {
+      "type": "vmware-vmx",
+      "communicator": "none",
+      "boot_wait": "500s",
+      "boot_command": [
+        "root<enter><wait5><wait5>",
+        "chown -R root:wheel /cf/root<enter><wait10><wait10>",
+        "chown -R root:wheel /cf/etc<enter><wait10><wait10>",
+        "sysctl -w net.inet.ip.mcast_ttl=64<enter><wait5><wait10>",
+        "cli<enter><wait><wait><wait10>",
+        "conf<enter><wait><wait10>",
+        "set system host-name vsrx1<enter><wait5>",
+        "set system services netconf ssh<enter><wait5>",
+        "set system root-authentication plain-text-password<enter><wait5>",
+        "Clouds123<enter><wait5>Clouds123<enter><wait5>",
+        "set system login user juniper authentication plain-text-password<enter><wait5>",
+        "Clouds123<enter><wait5>Clouds123<enter><wait5>",
+        "set system login user juniper class super-user<enter><wait5>",
+        "set system services ssh root-login allow<enter><wait5>",
+        "set interfaces ge-0/0/0.0 family inet dhcp<enter><wait5>",
+        "delete security zones security-zone untrust interfaces ge-0/0/0.0<enter><wait5>",
+        "set security zones functional-zone management interfaces ge-0/0/0.0 host-inbound-traffic protocols all<enter><wait5>",
+        "set security zones functional-zone management interfaces ge-0/0/0.0 host-inbound-traffic system-services all<enter><wait5>",
+        "commit and-quit<enter><wait10><wait10><wait10>",
+        "request system power-off"
+
+      ],
+      "vmx_data": {
+        "ethernet0.virtualDev": "vmxnet3",
+        "ethernet0.connectionType": "nat",
+        "ethernet0.startConnected": "TRUE",
+        "ethernet0.addressType": "generated",
+        "ethernet1.virtualDev": "vmxnet3",
+        "ethernet1.connectionType": "nat",
+        "ethernet1.startConnected": "TRUE",
+        "ethernet1.addressType": "generated",
+        "ethernet2.virtualDev": "vmxnet3",
+        "ethernet2.connectionType": "nat",
+        "ethernet2.startConnected": "TRUE",
+        "ethernet2.addressType": "generated"
+      },
+      "source_path": "image/vsrx.vmx",
+      "ssh_username": "root",
+      "ssh_password": "Clouds123",
+      "vnc_port_min": "5800",
+      "vnc_port_max": "5900"
+    }
+  ]
+}

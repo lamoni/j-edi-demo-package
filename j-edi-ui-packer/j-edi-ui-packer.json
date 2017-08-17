@@ -1,0 +1,103 @@
+{
+  "builders": [
+    {
+      "type": "vmware-iso",
+      "iso_url": "http://releases.ubuntu.com/16.04.2/ubuntu-16.04.2-server-amd64.iso",
+      "iso_checksum": "2bce60d18248df9980612619ff0b34e6",
+      "iso_checksum_type": "md5",
+      "ssh_username": "juniper",
+      "ssh_password": "Clouds123",
+      "ssh_wait_timeout": "20m",
+      "http_directory" : "preseeds",
+      "http_port_min" : 9001,
+      "http_port_max" : 9001,
+      "shutdown_command": "echo 'Clouds123' | sudo -S shutdown -P now",
+      "vm_name": "j-edi-ui-vmware",
+      "output_directory": "j-edi-ui-vmware",
+      "boot_command": [
+        "<enter><wait><f6><esc><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "/install/vmlinuz<wait>",
+        " auto<wait>",
+        " console-setup/ask_detect=false<wait>",
+        " console-setup/layoutcode=us<wait>",
+        " console-setup/modelcode=pc105<wait>",
+        " debconf/frontend=noninteractive<wait>",
+        " debian-installer=en_US<wait>",
+        " hostname=master ",
+        " fb=false<wait>",
+        " initrd=/install/initrd.gz<wait>",
+        " kbd-chooser/method=us<wait>",
+        " keyboard-configuration/layout=USA<wait>",
+        " keyboard-configuration/variant=USA<wait>",
+        " locale=en_US<wait>",
+        " netcfg/get_hostname=master<wait>",
+        " grub-installer/bootdev=/dev/sda<wait>",
+        " noapic<wait>",
+        " preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg",
+        " -- <wait>",
+        "<enter><wait>"
+      ],
+      "vmx_data": {
+        "memsize": "2000",
+        "numvcpus": "2",
+        "cpuid.coresPerSocket": "1",
+        "vhv.enable": "TRUE",
+        "ethernet0.virtualDev": "vmxnet3",
+        "ethernet0.connectionType": "nat"
+      }
+    }
+  ],
+
+  "provisioners": [
+    {
+      "type": "shell",
+      "execute_command": "echo 'Clouds123' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+      "inline": [
+        "sudo apt-get update -y",
+        "sudo apt-get upgrade -y",
+        "sudo apt-get install git openssh-server curl -y",
+        "sudo sed -i 's/prohibit-password/yes/' /etc/ssh/sshd_config",
+        "sudo service ssh restart",
+        "echo 'root:Clouds123' | sudo chpasswd",
+        "sudo git clone https://jedidemo:3996134aed0410cb7416612475ddc6e337b2afb1@github.com/lamoni/j-edi-ui-demo.git /opt/j-edi-ui",
+
+        "curl -sL https://deb.nodesource.com/setup_6.x -o nodesource_setup.sh",
+        "sudo bash nodesource_setup.sh",
+        "sudo apt-get install nodejs -y",
+        "sudo apt-get install build-essential tcl -y",
+
+        "sudo sed -i '0,/localhost/s/localhost/localhost redis/' /etc/hosts",
+
+        "curl -O http://download.redis.io/redis-stable.tar.gz",
+        "tar xzvf redis-stable.tar.gz",
+        "make -C ./redis-stable/",
+        "sudo make install -C ./redis-stable/",
+
+        "sudo mkdir /etc/redis",
+        "sudo mkdir /var/redis",
+        "sudo cp ./redis-stable/utils/redis_init_script /etc/init.d/redis_6379",
+        "sudo cp ./redis-stable/redis.conf /etc/redis/6379.conf",
+
+        "sudo sed -i 's/daemonize no/daemonize yes/' /etc/redis/6379.conf",
+        "sudo sed -i \"s/dir .\\//dir \\/var\\/redis\\/6379\\//\" /etc/redis/6379.conf",
+        "sudo cp ./redis-stable/src/redis-server /usr/local/bin/redis-server",
+        "sudo mkdir /var/redis/6379",
+        "sudo update-rc.d redis_6379 defaults",
+
+
+        "sudo echo \"export SALT_BUS=http://\\$1:8000\" >> ~/set_salt_bus.sh",
+        "sudo echo 'sudo bash -c \"echo SALT_BUS=http://$1:8000 >> /etc/environment\"' >> ~/set_salt_bus.sh",
+        "sudo echo 'sudo bash -c \"echo \\\"export SALT_BUS=http://$1:8000\\\" >> /home/juniper/.bashrc\"' >> ~/set_salt_bus.sh",
+        "sudo echo 'sudo bash -c \"echo \\\"export SALT_BUS=http://$1:8000\\\" >> /root/.bashrc\"' >> ~/set_salt_bus.sh",
+
+        "sudo chmod -x set_salt_bus.sh",
+
+        "sudo sed -i \"s/10.161.41.13/`/sbin/ifconfig | grep -A 1 ens | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'`/\" /opt/j-edi-ui/j-edi-ui/src/environments/environment.ts"
+
+      ]
+    }
+  ]
+}
