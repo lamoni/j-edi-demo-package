@@ -2,7 +2,7 @@
 
 j-edi-demo-package houses three Packer projects for building and provisioning three VMs: A J-EDI instance, a demo UI that integrates with the J-EDI instance, and a vSRX.  Using these Packer files, you can instantiate a J-EDI environment with a (relatively) few commands.
 
-# Pre-requisites
+# Prerequisites
 
 - Install Packer (https://packer.io)
 - Clone this repo (https://github.com/Juniper/j-edi-demo-package)
