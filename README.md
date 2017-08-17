@@ -73,7 +73,7 @@ sudo salt-run proxy_minion.create_with_defaults vsrx1 192.168.150.134
 
 # Step 6 - Verify the UI is connected to the J-EDI instance
 ```
-- Browse to the IP address of the UI VM on port 4200, you should see a blue lightning bolt in the upper right corner
+- Browse to the IP address of the UI VM on port 4200, you should see a blue lightning bolt in the upper left corner
 ```
 
 # Step 7 - Verify the VSRX has been correctly configured as a proxy minion on the J-EDI VM (Salt Master)
