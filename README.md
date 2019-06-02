@@ -5,7 +5,7 @@ j-edi-demo-package houses three Packer projects for building and provisioning th
 # Prerequisites
 
 - Install Packer (https://packer.io)
-- Clone this repo (https://github.com/Juniper/j-edi-demo-package)
+- Clone this repo (https://github.com/lamoni/j-edi-demo-package)
 - VMWare Workstation / Fusion (Virtualbox support being tested, other hypervisor support will be added as requested)
 
 # Step 1 - Build J-EDI Instance
